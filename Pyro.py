@@ -27,17 +27,14 @@ CLOUDMINSIZE = 20
 CLOUDMAXSIZE = 100
 CLOUDMINSPEED = 8
 CLOUDMAXSPEED = 40
-cloudSpeeds = []            # Stores all the possible speed for each cloud
-for i in range(CLOUDMINSPEED, CLOUDMAXSPEED, 5): cloudSpeeds.append(i/8)        # Adds the speed values in the cloudSpeeds list
-
+cloudSpeeds = [i/8 for i in range(CLOUDMINSPEED, CLOUDMAXSPEED, 5)]            # Stores all possible speed for clouds
 # set up rain or snow's constants
 RAINRATE = 3
 RAINMINSIZE = 15
 RAINMAXSIZE = 30
 RAINMINSPEED = 2
 RAINMAXSPEED = 8
-rainSpeeds = []
-for i in range(RAINMINSPEED, RAINMAXSPEED): rainSpeeds.append(i/2)
+rainSpeeds = [i/2 for i in range(RAINMINSPEED, RAINMAXSPEED)]   # Create all possible speed for rains
 
 def EXIT():     # Exit code
 	topScoreFile("save")
@@ -87,10 +84,9 @@ def makeNewClouds():    # Makes new cloud and add it in the list "clouds"
 		clouds.append(newCloud)
 
 def moveClouds():       # Moves each cloud stored in the list "clouds" in left direction
-	for c in clouds:
+	for c in clouds[:]:
 		c["rect"].move_ip(-1*c["speed"], 0) # Move cloud with its speed
 		windowSurface.blit(c["image"], c["rect"])   # Draw the cloud on the surface
-	for c in clouds[:]:
 		# remove a cloud when it passes throught the left side of the window
 		if c["rect"].right < 0:
 			clouds.remove(c)
@@ -151,10 +147,10 @@ def makeRain(score, RAINRATE):      # Makes new rains and adds them to the the r
 
 def topScoreFile(mode):           # save topScore in a file and load it later
 	if mode == "load":          # Load score
-		if not os.path.isfile("Data/topScore.txt"):
+		if not os.path.isfile("Data/topScore.txt"):             # if topScore file not present, return zero (0)
 			return 0
 		else:
-			with open("Data/topScore.txt") as file:
+			with open("Data/topScore.txt") as file:  #else read the score from the file
 				data = file.read().lower()
 			score = ""
 			for i in data:
@@ -182,11 +178,12 @@ while True:
 	# Display information about the game
 	clouds = []     # Stores dictionary of all the clouds
 	rains = []          # Stores dictionary of all the rains
-	bgcolor = 255       # holds numerical value for background color
-	topScore = topScoreFile("load")
+	bgcolor = 255       # holds numerical value for background color which will decrease with time to make an effect of night
+	topScore = topScoreFile("load")                 # load top score from the file
 	# randomly choose player image of different colours
 	playerImg = random.choice([pygame.transform.scale(pygame.image.load("Data/player1.png"), (50, 75)), pygame.transform.scale(pygame.image.load("Data/player2.png"), (50, 75)), pygame.transform.scale(pygame.image.load("Data/player3.png"), (50, 75)), pygame.transform.scale(pygame.image.load("Data/player2.png"), (50, 75))])
-	score = 0
+	score = 0       # set initial score to zero
+	day = True      # will be used to change day to night and vice versa
 	windowSurface.fill(WHITE)
 	makeBackground()
 	writeText("Flamboyant Flame", RED, 30, (WINW/2)-130, 145, False)
@@ -205,13 +202,21 @@ while True:
 		# game starts from here
 		windowSurface.fill((bgcolor, bgcolor, bgcolor))
 		windowSurface.blit(playerImg, pygame.Rect(playerRect.left, playerRect.top-25, playerRect.width, playerRect.height-25))
-		if score % 50 == 0:
+		if score % 50 == 0:             # add rains in the screen for every 50 increment in the score
 			# Add rains to rains dictionary
 			makeRain(score, RAINRATE)
-			if bgcolor > 0:
-				bgcolor -= 1        # change the bgcolor so that background color change from white to black slowly
-				if bgcolor < 0:
-					bgcolor = 0
+			if day:
+				if bgcolor > 0:
+					bgcolor -= 4        # change the bgcolor so that background color change from white(day) to black(night) slowly
+					if bgcolor < 0:
+						bgcolor = 0
+						day = False
+			else:
+				if bgcolor < 255:
+					bgcolor += 4        # change the bgcolor so that background color change from black(night) to white(day) slowly
+					if bgcolor > 255:
+						bgcolor = 255
+						day = True
 		# move the rains downward
 		for r in rains[:]:
 			r["rect"].move_ip(0, r["speed"])
@@ -234,7 +239,7 @@ while True:
 					pause("Paused")
 			if event.type == MOUSEMOTION:
 				# move the playerRect to cursor's x-coordinate.
-				playerRect.move_ip(event.pos[0]-playerRect.centerx, 0)
+				playerRect.centerx = event.pos[0]
 		# move mouse cursor to the playerRect
 		pygame.mouse.set_pos(playerRect.centerx, playerRect.centery)
 		if playerGotHit(playerRect):
